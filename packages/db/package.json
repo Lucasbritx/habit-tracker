@@ -1,0 +1,28 @@
+{
+  "name": "@repo/db",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./schema": "./src/schema.ts",
+    "./models/*": "./src/models/*.ts",
+    "./index": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@babel/plugin-proposal-decorators": "^7.23.0",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@nozbe/watermelondb": "^0.27.1",
+    "react-native": "*"
+  },
+  "peerDependencies": {
+    "react-native": "*"
+  }
+}
