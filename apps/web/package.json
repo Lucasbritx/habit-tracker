@@ -13,6 +13,7 @@
   "dependencies": {
     "@nozbe/watermelondb": "^0.27.1",
     "@repo/ui": "*",
+    "date-fns": "^4.1.0",
     "lokijs": "^1.5.12",
     "nativewind": "^4.2.1",
     "next": "16.1.0",

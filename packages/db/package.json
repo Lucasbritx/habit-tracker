@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@nozbe/watermelondb": "^0.27.1",
+    "date-fns": "^4.1.0",
     "lokijs": "^1.5.12",
     "react-native": "*",
     "zustand": "^5.0.9"
