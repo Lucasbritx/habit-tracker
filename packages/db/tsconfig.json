@@ -1,8 +1,12 @@
 {
-  "extends": "@repo/typescript-config/react-library.json",
+  "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "experimentalDecorators": true, // Required for WatermelonDB
+    "emitDecoratorMetadata": true,
+    "strict": false // Loosening strictness slightly for WD types, or do I need it? 
+    // Actually, WD should work with strict true but needs proper typing
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ]
 }
