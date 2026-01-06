@@ -1,32 +1,69 @@
-import { View, Text, Vibration, Platform } from 'react-native';
+import { View, Text, FlatList, Platform } from 'react-native';
+import { database } from '../../db';
+import { Habit, HabitRepository } from '@repo/db';
+import { HabitItem } from '@repo/ui/habit-item';
+import { useDateStore } from '@repo/ui/store';
 import { Button } from '@repo/ui/button';
+import { withObservables } from '@nozbe/watermelondb/react';
 import * as Haptics from 'expo-haptics';
-import { Confetti } from '@repo/ui/confetti';
-import { useState } from 'react';
+import { format } from 'date-fns';
+import { router } from 'expo-router';
 
-export default function Home() {
-  const [showConfetti, setShowConfetti] = useState(false);
+const habitRepo = HabitRepository(database);
 
-  const handleComplete = () => {
-    // 1. Trigger Haptics (Mobile only)
+const HabitList = ({ habits }: { habits: Habit[] }) => {
+  const { selectedDate } = useDateStore();
+  
+  const handleToggle = async (habit: Habit) => {
     if (Platform.OS !== 'web') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-
-    // 2. Show Confetti (Web mainly, mobile needs native lib)
-    setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 5000);
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    await habitRepo.toggleComplete(habit.id, dateStr);
   };
 
   return (
-    <View className="flex-1 items-center justify-center bg-background gap-4">
-      <Confetti trigger={showConfetti} />
+    <FlatList
+      data={habits}
+      keyExtractor={item => item.id}
+      contentContainerStyle={{ padding: 16 }}
+      renderItem={({ item }) => (
+        <HabitItem
+          title={item.title}
+          streak={item.currentStreak}
+          completed={false} // TODO: Implement day-specific status check
+          onToggle={() => handleToggle(item)}
+        />
+      )}
+      ListEmptyComponent={() => (
+        <View className="items-center justify-center pt-20 gap-4">
+            <Text className="text-gray-500 text-lg">No habits found.</Text>
+            <Button onPress={() => router.push('/(tabs)/habits')}>
+                Create Habit
+            </Button>
+        </View>
+      )}
+    />
+  );
+};
+
+const EnhancedHabitList = withObservables([], () => ({
+  habits: habitRepo.getAll(),
+}))(HabitList);
+
+export default function Home() {
+  const { selectedDate } = useDateStore();
+
+  return (
+    <View className="flex-1 bg-background">
+      <View className="pt-16 px-4 pb-4 bg-surface border-b border-gray-800">
+        <Text className="text-primary text-3xl font-bold">
+            {format(selectedDate, 'EEEE, MMM d')}
+        </Text>
+        <Text className="text-gray-400">Keep it up!</Text>
+      </View>
       
-      <Text className="text-primary text-2xl font-bold">Habit Tracker Mobile</Text>
-      
-      <Button variant="primary" onPress={handleComplete}>
-        Complete Habit!
-      </Button>
+      <EnhancedHabitList />
     </View>
   );
 }

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@nozbe/watermelondb": "^0.27.1",
-    "@repo/ui": "*",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "expo": "~54.0.30",
     "expo-haptics": "^15.0.8",
@@ -30,6 +30,7 @@
     "@babel/plugin-proposal-decorators": "^7.28.0",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
+    "@repo/ui": "^0.0.0",
     "@types/react": "~19.1.0",
     "typescript": "^5.1.3"
   },
