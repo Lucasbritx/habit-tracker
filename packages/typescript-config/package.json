@@ -5,5 +5,11 @@
   "license": "MIT",
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "nativewind": "^4.2.1",
+    "react-native-css-interop": "^0.2.1",
+    "react-native-reanimated": "^4.2.1",
+    "tailwindcss": "^3.4.19"
   }
 }
