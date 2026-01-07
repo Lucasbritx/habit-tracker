@@ -99,6 +99,15 @@ class SimpleHabitStore {
       this.notifyListeners();
     }
   }
+
+  update(id: string, updates: Partial<Omit<HabitData, 'id' | 'createdAt'>>): void {
+    const habit = this.habits.find((h) => h.id === id);
+    if (habit) {
+      Object.assign(habit, updates);
+      this.saveToStorage();
+      this.notifyListeners();
+    }
+  }
 }
 
 const store = new SimpleHabitStore();
@@ -140,9 +149,10 @@ export const useHabits = () => {
 
   useEffect(() => {
     setHabits(store.getAll());
-    return store.subscribe(() => {
+    const unsubscribe = store.subscribe(() => {
       setHabits(store.getAll());
     });
+    return () => { unsubscribe(); };
   }, [store]);
 
   return habits;
