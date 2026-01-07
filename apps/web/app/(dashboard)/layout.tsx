@@ -1,32 +1,36 @@
+"use client";
+
 import Link from "next/link";
 import { ReactNode } from "react";
+import { HabitStoreProvider } from "../../lib/habit-store";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      {/* Sidebar - Desktop */}
-      <aside className="w-64 border-r border-gray-800 p-6 hidden md:flex flex-col gap-6">
-        <h1 className="text-2xl font-bold text-primary">Habit Tracker</h1>
-        <nav className="flex flex-col gap-2">
-          <NavLink href="/" label="Home" />
-          <NavLink href="/habits" label="Habits" />
-          <NavLink href="/stats" label="Analytics" />
-          <NavLink href="/settings" label="Settings" />
-        </nav>
-      </aside>
+    <HabitStoreProvider>
+      <div className="flex min-h-screen bg-background text-foreground">
+        {/* Sidebar - Desktop */}
+        <aside className="w-64 border-r border-gray-800 p-6 hidden md:flex flex-col gap-6">
+          <h1 className="text-2xl font-bold text-primary">Habit Tracker</h1>
+          <nav className="flex flex-col gap-2">
+            <NavLink href="/" label="Home" />
+            <NavLink href="/habits" label="Habits" />
+            <NavLink href="/stats" label="Analytics" />
+            <NavLink href="/settings" label="Settings" />
+          </nav>
+        </aside>
 
-      {/* Mobile Header */}
-      <header className="md:hidden w-full border-b border-gray-800 p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-primary">Habit Tracker</h1>
-        {/* Simple Menu Trigger Placeholder */}
-        <button className="text-gray-400">Menu</button>
-      </header>
+        {/* Mobile Header */}
+        <header className="md:hidden w-full border-b border-gray-800 p-4 flex justify-between items-center">
+          <h1 className="text-xl font-bold text-primary">Habit Tracker</h1>
+          <button className="text-gray-400">Menu</button>
+        </header>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 md:p-10 max-w-5xl mx-auto w-full">
-        {children}
-      </main>
-    </div>
+        {/* Main Content */}
+        <main className="flex-1 p-6 md:p-10 max-w-5xl mx-auto w-full">
+          {children}
+        </main>
+      </div>
+    </HabitStoreProvider>
   );
 }
 
