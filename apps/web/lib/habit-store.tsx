@@ -2,6 +2,9 @@
 
 import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 
+// Helper to get today's date string (YYYY-MM-DD)
+const getTodayString = () => new Date().toISOString().split('T')[0];
+
 // Simple Habit type (no decorators needed)
 export interface HabitData {
   id: string;
@@ -11,6 +14,7 @@ export interface HabitData {
   currentStreak: number;
   longestStreak: number;
   createdAt: number;
+  completedDates: string[]; // Array of date strings "YYYY-MM-DD"
 }
 
 // Simple in-memory + localStorage store
@@ -29,6 +33,11 @@ class SimpleHabitStore {
       const stored = localStorage.getItem(this.storageKey);
       if (stored) {
         this.habits = JSON.parse(stored);
+        // Migration: ensure completedDates exists
+        this.habits = this.habits.map(h => ({
+          ...h,
+          completedDates: h.completedDates || []
+        }));
       }
     } catch (e) {
       console.error("Failed to load habits from storage", e);
@@ -57,6 +66,13 @@ class SimpleHabitStore {
     return [...this.habits];
   }
 
+  isCompletedToday(id: string): boolean {
+    const habit = this.habits.find((h) => h.id === id);
+    if (!habit) return false;
+    const today = getTodayString();
+    return habit.completedDates.includes(today);
+  }
+
   create(title: string, frequency: "daily" | "weekly" = "daily"): HabitData {
     const habit: HabitData = {
       id: crypto.randomUUID(),
@@ -66,6 +82,7 @@ class SimpleHabitStore {
       currentStreak: 0,
       longestStreak: 0,
       createdAt: Date.now(),
+      completedDates: [],
     };
     this.habits.push(habit);
     this.saveToStorage();
@@ -79,16 +96,34 @@ class SimpleHabitStore {
     this.notifyListeners();
   }
 
-  incrementStreak(id: string): void {
+  toggleComplete(id: string): boolean {
     const habit = this.habits.find((h) => h.id === id);
-    if (habit) {
+    if (!habit) return false;
+    
+    const today = getTodayString();
+    const alreadyCompleted = habit.completedDates.includes(today);
+    
+    if (alreadyCompleted) {
+      // Uncomplete - remove today from completedDates
+      habit.completedDates = habit.completedDates.filter(d => d !== today);
+      habit.currentStreak = Math.max(0, habit.currentStreak - 1);
+    } else {
+      // Complete - add today to completedDates
+      habit.completedDates.push(today);
       habit.currentStreak++;
       if (habit.currentStreak > habit.longestStreak) {
         habit.longestStreak = habit.currentStreak;
       }
-      this.saveToStorage();
-      this.notifyListeners();
     }
+    
+    this.saveToStorage();
+    this.notifyListeners();
+    return !alreadyCompleted; // Return true if just completed
+  }
+
+  incrementStreak(id: string): void {
+    // Deprecated: use toggleComplete instead
+    this.toggleComplete(id);
   }
 
   resetStreak(id: string): void {

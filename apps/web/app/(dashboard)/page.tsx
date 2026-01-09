@@ -56,15 +56,14 @@ export default function Home() {
 
 function HabitCard({ habit, onComplete }: { habit: HabitData; onComplete: () => void }) {
   const store = useHabitStore();
-  const [completed, setCompleted] = useState(false);
+  const isCompletedToday = store.isCompletedToday(habit.id);
   const [showActions, setShowActions] = useState(false);
 
   const handleToggle = () => {
-    if (!completed) {
-      store.incrementStreak(habit.id);
-      onComplete();
+    const justCompleted = store.toggleComplete(habit.id);
+    if (justCompleted) {
+      onComplete(); // Show confetti only when completing, not uncompleting
     }
-    setCompleted(!completed);
   };
 
   const handleDelete = () => {
@@ -80,7 +79,7 @@ function HabitCard({ habit, onComplete }: { habit: HabitData; onComplete: () => 
       onMouseLeave={() => setShowActions(false)}
     >
       <Link href={`/habits/${habit.id}`} className="flex-1">
-        <p className={`text-lg font-semibold ${completed ? "text-gray-500 line-through" : "text-white"} hover:text-primary transition-colors`}>
+        <p className={`text-lg font-semibold ${isCompletedToday ? "text-gray-500 line-through" : "text-white"} hover:text-primary transition-colors`}>
           {habit.title}
         </p>
         <p className="text-gray-400 text-sm">🔥 {habit.currentStreak} day streak</p>
@@ -99,10 +98,10 @@ function HabitCard({ habit, onComplete }: { habit: HabitData; onComplete: () => 
       <button
         onClick={handleToggle}
         className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all transform hover:scale-110 ${
-          completed ? "bg-primary border-primary" : "border-gray-600 hover:border-primary"
+          isCompletedToday ? "bg-primary border-primary" : "border-gray-600 hover:border-primary"
         }`}
       >
-        {completed && <span className="text-white font-bold text-lg">✓</span>}
+        {isCompletedToday && <span className="text-white font-bold text-lg">✓</span>}
       </button>
     </div>
   );
