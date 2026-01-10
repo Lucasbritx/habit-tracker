@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { login, signup } from '../lib/supabase/actions'
+import { login, signup } from '../../lib/supabase/actions'
 import { Button } from '@repo/ui/button'
 
 export default function LoginPage() {
