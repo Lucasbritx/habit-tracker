@@ -18,6 +18,8 @@
     "@nozbe/watermelondb": "^0.27.1",
     "@repo/db": "*",
     "@repo/ui": "*",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.90.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lokijs": "^1.5.12",
