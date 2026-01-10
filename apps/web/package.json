@@ -10,7 +10,9 @@
     "lint": "eslint --max-warnings 0",
     "check-types": "next typegen && tsc --noEmit",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run"
   },
   "dependencies": {
     "@nozbe/watermelondb": "^0.27.1",

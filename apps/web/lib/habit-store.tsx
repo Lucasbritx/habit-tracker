@@ -97,48 +97,70 @@ class SimpleHabitStore {
   }
 
   toggleComplete(id: string): boolean {
-    const habit = this.habits.find((h) => h.id === id);
-    if (!habit) return false;
+    const habitIndex = this.habits.findIndex((h) => h.id === id);
+    if (habitIndex === -1) return false;
     
+    const habit = this.habits[habitIndex]!;
     const today = getTodayString();
     const alreadyCompleted = habit.completedDates.includes(today);
     
+    let updatedHabit: HabitData;
+    
     if (alreadyCompleted) {
-      // Uncomplete - remove today from completedDates
-      habit.completedDates = habit.completedDates.filter(d => d !== today);
-      habit.currentStreak = Math.max(0, habit.currentStreak - 1);
+      // Uncomplete
+      updatedHabit = {
+        ...habit,
+        completedDates: habit.completedDates.filter(d => d !== today),
+        currentStreak: Math.max(0, habit.currentStreak - 1)
+      };
     } else {
-      // Complete - add today to completedDates
-      habit.completedDates.push(today);
-      habit.currentStreak++;
-      if (habit.currentStreak > habit.longestStreak) {
-        habit.longestStreak = habit.currentStreak;
-      }
+      // Complete
+      updatedHabit = {
+        ...habit,
+        completedDates: [...habit.completedDates, today],
+        currentStreak: habit.currentStreak + 1,
+        longestStreak: Math.max(habit.longestStreak, habit.currentStreak + 1)
+      };
     }
+    
+    this.habits = [
+      ...this.habits.slice(0, habitIndex),
+      updatedHabit,
+      ...this.habits.slice(habitIndex + 1)
+    ];
     
     this.saveToStorage();
     this.notifyListeners();
-    return !alreadyCompleted; // Return true if just completed
+    return !alreadyCompleted;
   }
 
   incrementStreak(id: string): void {
-    // Deprecated: use toggleComplete instead
     this.toggleComplete(id);
   }
 
   resetStreak(id: string): void {
-    const habit = this.habits.find((h) => h.id === id);
-    if (habit) {
-      habit.currentStreak = 0;
+    const habitIndex = this.habits.findIndex((h) => h.id === id);
+    if (habitIndex !== -1) {
+      const habit = this.habits[habitIndex]!;
+      this.habits = [
+        ...this.habits.slice(0, habitIndex),
+        { ...habit, currentStreak: 0 },
+        ...this.habits.slice(habitIndex + 1)
+      ];
       this.saveToStorage();
       this.notifyListeners();
     }
   }
 
   update(id: string, updates: Partial<Omit<HabitData, 'id' | 'createdAt'>>): void {
-    const habit = this.habits.find((h) => h.id === id);
-    if (habit) {
-      Object.assign(habit, updates);
+    const habitIndex = this.habits.findIndex((h) => h.id === id);
+    if (habitIndex !== -1) {
+      const habit = this.habits[habitIndex]!;
+      this.habits = [
+        ...this.habits.slice(0, habitIndex),
+        { ...habit, ...updates },
+        ...this.habits.slice(habitIndex + 1)
+      ];
       this.saveToStorage();
       this.notifyListeners();
     }

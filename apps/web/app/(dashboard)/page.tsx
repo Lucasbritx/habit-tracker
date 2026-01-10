@@ -97,6 +97,8 @@ function HabitCard({ habit, onComplete }: { habit: HabitData; onComplete: () => 
 
       <button
         onClick={handleToggle}
+        data-testid="habit-toggle"
+        data-habit-title={habit.title}
         className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all transform hover:scale-110 ${
           isCompletedToday ? "bg-primary border-primary" : "border-gray-600 hover:border-primary"
         }`}

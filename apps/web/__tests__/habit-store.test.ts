@@ -4,7 +4,7 @@ import { HabitData } from '../lib/habit-store';
 if (!global.crypto) {
   // @ts-ignore
   global.crypto = {
-    randomUUID: () => 'test-uuid-' + Math.random().toString(36).substr(2, 9),
+    randomUUID: () => ('test-uuid-' + Math.random().toString(36).substring(2, 11)) as any,
   };
 }
 
@@ -18,7 +18,7 @@ describe('HabitStore Logic (Manual Mocking Tests)', () => {
 
   const createHabit = (title: string): HabitData => {
     const habit: HabitData = {
-      id: crypto.randomUUID(),
+      id: crypto.randomUUID() as any,
       title,
       frequency: 'daily',
       categoryId: 'default',
@@ -32,7 +32,7 @@ describe('HabitStore Logic (Manual Mocking Tests)', () => {
   };
 
   const toggleComplete = (habit: HabitData) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0]!;
     const alreadyCompleted = habit.completedDates.includes(today);
     
     if (alreadyCompleted) {
