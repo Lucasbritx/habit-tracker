@@ -23,7 +23,7 @@ export default function HabitsPage() {
     setError("");
 
     try {
-      store.create(title, frequency);
+      await store.create(title, frequency);
       setTitle("");
       router.push("/");
     } catch (e) {

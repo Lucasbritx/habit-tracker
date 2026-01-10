@@ -30,16 +30,16 @@ export default function HabitDetailsPage() {
     );
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (title.trim()) {
-      store.update(habit.id, { title: title.trim() });
+      await store.update(habit.id, { title: title.trim() });
       setIsEditing(false);
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm(`Delete "${habit.title}"?`)) {
-      store.delete(habit.id);
+      await store.delete(habit.id);
       router.push("/");
     }
   };

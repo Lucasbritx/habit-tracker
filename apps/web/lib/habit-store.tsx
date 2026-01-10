@@ -2,6 +2,8 @@
 
 import { createContext, useContext, ReactNode, useState, useEffect } from "react";
 
+import { createClient } from "./supabase/client";
+
 // Helper to get today's date string (YYYY-MM-DD)
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
@@ -22,18 +24,79 @@ class SimpleHabitStore {
   private habits: HabitData[] = [];
   private listeners: Set<() => void> = new Set();
   private storageKey = "habit-tracker-habits";
+  private supabase = createClient();
+  private userId: string | null = null;
 
   constructor() {
     this.loadFromStorage();
+    this.init();
+  }
+
+  async init() {
+    const { data: { user } } = await this.supabase.auth.getUser();
+    if (user) {
+      this.userId = user.id;
+      await this.fetchFromSupabase();
+    }
+
+    // Subscribe to auth changes
+    this.supabase.auth.onAuthStateChange(async (event, session) => {
+      this.userId = session?.user?.id || null;
+      if (this.userId) {
+        await this.fetchFromSupabase();
+      } else {
+        this.habits = [];
+        this.loadFromStorage();
+        this.notifyListeners();
+      }
+    });
+  }
+
+  private async fetchFromSupabase() {
+    if (!this.userId) return;
+
+    try {
+      // Fetch habits
+      const { data: habitsData, error: habitsError } = await this.supabase
+        .from('habits')
+        .select('*');
+
+      if (habitsError) throw habitsError;
+
+      // Fetch all logs for these habits to populate completedDates
+      const { data: logsData, error: logsError } = await this.supabase
+        .from('habit_logs')
+        .select('habit_id, date');
+
+      if (logsError) throw logsError;
+
+      // Map to our local format
+      this.habits = (habitsData || []).map(h => ({
+        id: h.id as string,
+        title: h.title as string,
+        frequency: (h.frequency || 'daily') as "daily" | "weekly",
+        categoryId: (h.category_id || 'default') as string,
+        currentStreak: (h.current_streak || 0) as number,
+        longestStreak: (h.longest_streak || 0) as number,
+        createdAt: h.created_at ? new Date(h.created_at).getTime() : Date.now(),
+        completedDates: (logsData || [])
+          .filter(l => l.habit_id === h.id)
+          .map(l => l.date as string)
+          .filter(Boolean)
+      }));
+
+      this.notifyListeners();
+    } catch (e) {
+      console.error("Failed to fetch from Supabase", e);
+    }
   }
 
   private loadFromStorage() {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || this.userId) return;
     try {
       const stored = localStorage.getItem(this.storageKey);
       if (stored) {
         this.habits = JSON.parse(stored);
-        // Migration: ensure completedDates exists
         this.habits = this.habits.map(h => ({
           ...h,
           completedDates: h.completedDates || []
@@ -45,7 +108,7 @@ class SimpleHabitStore {
   }
 
   private saveToStorage() {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || this.userId) return;
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(this.habits));
     } catch (e) {
@@ -73,9 +136,9 @@ class SimpleHabitStore {
     return habit.completedDates.includes(today);
   }
 
-  create(title: string, frequency: "daily" | "weekly" = "daily"): HabitData {
+  async create(title: string, frequency: "daily" | "weekly" = "daily"): Promise<HabitData> {
     const habit: HabitData = {
-      id: crypto.randomUUID(),
+      id: crypto.randomUUID() as string, // Cast to string to avoid potential type issues
       title,
       frequency,
       categoryId: "default",
@@ -84,19 +147,56 @@ class SimpleHabitStore {
       createdAt: Date.now(),
       completedDates: [],
     };
+
+    // Optimistic update
     this.habits.push(habit);
     this.saveToStorage();
     this.notifyListeners();
+
+    if (this.userId) {
+      try {
+        const { data, error } = await this.supabase
+          .from('habits')
+          .insert({
+            title,
+            frequency,
+            category_id: habit.categoryId,
+            current_streak: 0,
+            longest_streak: 0
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        // Update local with real DB ID
+        habit.id = data.id;
+        this.notifyListeners();
+      } catch (e) {
+        console.error("Supabase create failed", e);
+        // Fallback or handle error
+      }
+    }
+
     return habit;
   }
 
-  delete(id: string): void {
+  async delete(id: string): Promise<void> {
     this.habits = this.habits.filter((h) => h.id !== id);
     this.saveToStorage();
     this.notifyListeners();
+
+    if (this.userId) {
+      const { error } = await this.supabase
+        .from('habits')
+        .delete()
+        .eq('id', id);
+      
+      if (error) console.error("Supabase delete failed", error);
+    }
   }
 
-  toggleComplete(id: string): boolean {
+  async toggleComplete(id: string): Promise<boolean> {
     const habitIndex = this.habits.findIndex((h) => h.id === id);
     if (habitIndex === -1) return false;
     
@@ -113,6 +213,24 @@ class SimpleHabitStore {
         completedDates: habit.completedDates.filter(d => d !== today),
         currentStreak: Math.max(0, habit.currentStreak - 1)
       };
+
+      if (this.userId) {
+        // Remove log
+        await this.supabase
+          .from('habit_logs')
+          .delete()
+          .eq('habit_id', id)
+          .eq('date', today);
+        
+        // Update habit streaks
+        await this.supabase
+          .from('habits')
+          .update({ 
+            current_streak: updatedHabit.currentStreak,
+            longest_streak: updatedHabit.longestStreak
+          })
+          .eq('id', id);
+      }
     } else {
       // Complete
       updatedHabit = {
@@ -121,6 +239,22 @@ class SimpleHabitStore {
         currentStreak: habit.currentStreak + 1,
         longestStreak: Math.max(habit.longestStreak, habit.currentStreak + 1)
       };
+
+      if (this.userId) {
+        // Add log
+        await this.supabase
+          .from('habit_logs')
+          .insert({ habit_id: id, date: today });
+        
+        // Update habit streaks
+        await this.supabase
+          .from('habits')
+          .update({ 
+            current_streak: updatedHabit.currentStreak,
+            longest_streak: updatedHabit.longestStreak
+          })
+          .eq('id', id);
+      }
     }
     
     this.habits = [
@@ -138,7 +272,7 @@ class SimpleHabitStore {
     this.toggleComplete(id);
   }
 
-  resetStreak(id: string): void {
+  async resetStreak(id: string): Promise<void> {
     const habitIndex = this.habits.findIndex((h) => h.id === id);
     if (habitIndex !== -1) {
       const habit = this.habits[habitIndex]!;
@@ -149,10 +283,17 @@ class SimpleHabitStore {
       ];
       this.saveToStorage();
       this.notifyListeners();
+
+      if (this.userId) {
+        await this.supabase
+          .from('habits')
+          .update({ current_streak: 0 })
+          .eq('id', id);
+      }
     }
   }
 
-  update(id: string, updates: Partial<Omit<HabitData, 'id' | 'createdAt'>>): void {
+  async update(id: string, updates: Partial<Omit<HabitData, 'id' | 'createdAt'>>): Promise<void> {
     const habitIndex = this.habits.findIndex((h) => h.id === id);
     if (habitIndex !== -1) {
       const habit = this.habits[habitIndex]!;
@@ -163,6 +304,20 @@ class SimpleHabitStore {
       ];
       this.saveToStorage();
       this.notifyListeners();
+
+      if (this.userId) {
+        const supabaseUpdates: any = {};
+        if (updates.title) supabaseUpdates.title = updates.title;
+        if (updates.frequency) supabaseUpdates.frequency = updates.frequency;
+        if (updates.categoryId) supabaseUpdates.category_id = updates.categoryId;
+        if (updates.currentStreak !== undefined) supabaseUpdates.current_streak = updates.currentStreak;
+        if (updates.longestStreak !== undefined) supabaseUpdates.longest_streak = updates.longestStreak;
+
+        await this.supabase
+          .from('habits')
+          .update(supabaseUpdates)
+          .eq('id', id);
+      }
     }
   }
 }

@@ -59,8 +59,8 @@ function HabitCard({ habit, onComplete }: { habit: HabitData; onComplete: () => 
   const isCompletedToday = store.isCompletedToday(habit.id);
   const [showActions, setShowActions] = useState(false);
 
-  const handleToggle = () => {
-    const justCompleted = store.toggleComplete(habit.id);
+  const handleToggle = async () => {
+    const justCompleted = await store.toggleComplete(habit.id);
     if (justCompleted) {
       onComplete(); // Show confetti only when completing, not uncompleting
     }
