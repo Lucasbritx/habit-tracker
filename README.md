@@ -4,6 +4,8 @@ A modern, high-performance, and gamified habit tracking application built with a
 
 ![alt text](image.png)
 
+![alt text](image-1.png)
+
 ---
 
 ## 🏗️ Architecture & Tech Stack
