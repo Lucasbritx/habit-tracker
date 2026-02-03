@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { ReactNode } from "react";
+import { DatabaseProvider } from "../../lib/database-provider";
 import { HabitStoreProvider } from "../../lib/habit-store";
 import { logout } from "../../lib/supabase/actions";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <HabitStoreProvider>
-      <div className="flex min-h-screen bg-background text-foreground">
+    <DatabaseProvider>
+      <HabitStoreProvider>
+        <div className="flex min-h-screen bg-background text-foreground">
         {/* Sidebar - Desktop */}
         <aside className="w-64 border-r border-gray-800 p-6 hidden md:flex flex-col gap-6">
           <h1 className="text-2xl font-bold text-primary">Habit Tracker</h1>
@@ -40,7 +42,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
-    </HabitStoreProvider>
+      </HabitStoreProvider>
+    </DatabaseProvider>
   );
 }
 
